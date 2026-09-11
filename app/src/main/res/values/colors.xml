@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 런처 아이콘 배경 (야간 하늘) -->
+    <color name="ic_launcher_background">#080B14</color>
+    <color name="satpass_background">#080B14</color>
+</resources>

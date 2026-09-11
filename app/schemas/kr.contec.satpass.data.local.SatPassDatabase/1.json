@@ -1,0 +1,109 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "845c15bc87ff904e5fb5ef55516bd2f2",
+    "entities": [
+      {
+        "tableName": "satellite",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`norad_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `selected` INTEGER NOT NULL DEFAULT 1, `added_at` INTEGER NOT NULL, PRIMARY KEY(`norad_id`))",
+        "fields": [
+          {
+            "fieldPath": "noradId",
+            "columnName": "norad_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selected",
+            "columnName": "selected",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "added_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "norad_id"
+          ]
+        }
+      },
+      {
+        "tableName": "tle",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`norad_id` INTEGER NOT NULL, `satellite_name` TEXT NOT NULL, `line1` TEXT NOT NULL, `line2` TEXT NOT NULL, `epoch_millis` INTEGER NOT NULL, `fetched_at` INTEGER NOT NULL, PRIMARY KEY(`norad_id`))",
+        "fields": [
+          {
+            "fieldPath": "noradId",
+            "columnName": "norad_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "satelliteName",
+            "columnName": "satellite_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "line1",
+            "columnName": "line1",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "line2",
+            "columnName": "line2",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "epochMillis",
+            "columnName": "epoch_millis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetched_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "norad_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tle_satellite_name",
+            "unique": false,
+            "columnNames": [
+              "satellite_name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tle_satellite_name` ON `${TABLE_NAME}` (`satellite_name`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '845c15bc87ff904e5fb5ef55516bd2f2')"
+    ]
+  }
+}

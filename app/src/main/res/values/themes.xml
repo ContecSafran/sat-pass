@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Compose 로 UI 를 그리므로 View 테마는 시스템 바 / 스플래시 배경만 담당한다.
+      실제 색상 체계는 ui/theme/Theme.kt 의 SatPassTheme 이 정한다.
+    -->
+    <style name="Theme.SatPass" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/satpass_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

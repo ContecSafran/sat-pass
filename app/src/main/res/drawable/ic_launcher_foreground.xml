@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 런처 아이콘 전경: 지구 궤도를 도는 위성 모티프 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 궤도 (기울어진 타원) -->
+    <group android:pivotX="54" android:pivotY="54" android:rotation="-25">
+        <path
+            android:strokeColor="#6FD3FF"
+            android:strokeWidth="2.4"
+            android:strokeAlpha="0.85"
+            android:fillColor="#00000000"
+            android:pathData="M54,30 m-27,24 a27,24 0 1,0 54,0 a27,24 0 1,0 -54,0" />
+    </group>
+
+    <!-- 지구 -->
+    <path
+        android:fillColor="#2C6FA8"
+        android:pathData="M54,42 m-12,12 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0" />
+    <path
+        android:fillColor="#4FA96B"
+        android:pathData="M47,49 l6,-2 l5,3 l-3,4 l-7,1 z" />
+    <path
+        android:fillColor="#4FA96B"
+        android:pathData="M57,59 l6,-1 l1,4 l-5,2 z" />
+
+    <!-- 위성 본체 + 태양전지판 -->
+    <group android:pivotX="54" android:pivotY="54" android:rotation="-25">
+        <path
+            android:fillColor="#E4EAF5"
+            android:pathData="M76,50 h7 v8 h-7 z" />
+        <path
+            android:fillColor="#35E0C0"
+            android:pathData="M66,51 h9 v6 h-9 z" />
+        <path
+            android:fillColor="#35E0C0"
+            android:pathData="M84,51 h9 v6 h-9 z" />
+    </group>
+</vector>
