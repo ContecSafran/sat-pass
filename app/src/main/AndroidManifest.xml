@@ -6,6 +6,21 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
+    <!-- 패스 알림 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 패스는 몇 분 단위로 지나가므로 정확한 시각에 알려야 한다. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- 재부팅 후 걸어 둔 알람을 다시 등록하기 위함 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- 관측 좌표를 지도 앱에서 열기 위한 패키지 가시성 선언 (Android 11+) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+    </queries>
+
     <!-- 위치 기능이 없는 기기에도 설치는 되도록 required=false -->
     <uses-feature
         android:name="android.hardware.location"
@@ -37,6 +52,25 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 패스 알림 시각에 깨어나 알림을 띄운다. -->
+        <receiver
+            android:name=".notification.PassAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="kr.contec.satpass.action.PASS_ALARM" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 재부팅·앱 업데이트 후 알람 재등록 -->
+        <receiver
+            android:name=".notification.BootCompletedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

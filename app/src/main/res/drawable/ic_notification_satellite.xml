@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  상태 표시줄 알림 아이콘.
+  알림 아이콘은 단색 실루엣으로만 그려지므로 흰색 단색 도형으로 만든다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+
+    <!-- 위성 본체 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10.5,9.5 h3 v5 h-3 z" />
+    <!-- 태양전지판 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4.5,10.5 h5.5 v3 h-5.5 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M14,10.5 h5.5 v3 h-5.5 z" />
+    <!-- 신호 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,4 l1.4,3 h-2.8 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,20 l-1.4,-3 h2.8 z" />
+</vector>

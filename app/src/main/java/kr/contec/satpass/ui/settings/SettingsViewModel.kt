@@ -13,10 +13,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kr.contec.satpass.data.local.entity.ObserverSiteEntity
+import kr.contec.satpass.data.location.LocationProvider
+import kr.contec.satpass.data.repository.ObserverSiteRepository
+import kr.contec.satpass.data.repository.PassAlarmRepository
 import kr.contec.satpass.data.repository.TleRepository
 import kr.contec.satpass.data.repository.TleSyncResult
 import kr.contec.satpass.data.settings.SatPassSettings
 import kr.contec.satpass.data.settings.SettingsRepository
+import kr.contec.satpass.domain.model.ObserverLocation
 import kr.contec.satpass.ui.appContainer
 import java.time.Instant
 
@@ -25,11 +30,20 @@ data class SettingsUiState(
     val lastTleFetchedAt: Instant? = null,
     val tleCachedCount: Int = 0,
     val isSyncing: Boolean = false,
+    /** 저장해 둔 관측 지점 */
+    val sites: List<ObserverSiteEntity> = emptyList(),
+    /** 걸어 둔 패스 알림 건수 */
+    val scheduledAlarmCount: Int = 0,
+    /** 정확 알람을 걸 수 있는지 (Android 12+ 는 사용자가 허용해야 한다) */
+    val canScheduleExactAlarms: Boolean = true,
 )
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val tleRepository: TleRepository,
+    private val observerSiteRepository: ObserverSiteRepository,
+    private val passAlarmRepository: PassAlarmRepository,
+    private val locationProvider: LocationProvider,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -55,6 +69,67 @@ class SettingsViewModel(
                     }
                 }
         }
+        viewModelScope.launch {
+            observerSiteRepository.all.collect { sites ->
+                _uiState.update { it.copy(sites = sites) }
+            }
+        }
+        viewModelScope.launch {
+            passAlarmRepository.all.collect { alarms ->
+                _uiState.update {
+                    it.copy(
+                        scheduledAlarmCount = alarms.size,
+                        canScheduleExactAlarms = passAlarmRepository.canScheduleExactAlarms(),
+                    )
+                }
+            }
+        }
+    }
+
+    /** 관측 지점 추가. 성공하면 바로 그 지점을 사용하도록 전환한다. */
+    fun addSite(name: String, latitude: Double, longitude: Double, altitudeMeters: Double) {
+        viewModelScope.launch {
+            val id = observerSiteRepository.add(name, latitude, longitude, altitudeMeters)
+            settingsRepository.setActiveSiteId(id)
+            _messages.send("'$name' 을(를) 추가하고 관측 위치로 설정했습니다.")
+        }
+    }
+
+    fun updateSite(site: ObserverSiteEntity) {
+        viewModelScope.launch {
+            observerSiteRepository.update(site)
+            _messages.send("'${site.name}' 을(를) 수정했습니다.")
+        }
+    }
+
+    fun deleteSite(site: ObserverSiteEntity) {
+        viewModelScope.launch {
+            observerSiteRepository.remove(site.id)
+            // 쓰고 있던 지점을 지웠다면 GPS 현재 위치로 되돌린다.
+            if (_uiState.value.settings.activeSiteId == site.id) {
+                settingsRepository.setActiveSiteId(ObserverSiteEntity.CURRENT_LOCATION_ID)
+            }
+            _messages.send("'${site.name}' 을(를) 삭제했습니다.")
+        }
+    }
+
+    /** [siteId] 가 0 이면 GPS 현재 위치를 쓴다. */
+    fun selectSite(siteId: Long) {
+        viewModelScope.launch { settingsRepository.setActiveSiteId(siteId) }
+    }
+
+    /**
+     * 지점 추가 다이얼로그를 현재 위치로 채우기 위한 값.
+     *
+     * @return 권한이 없거나 위치를 얻지 못하면 null
+     */
+    suspend fun currentLocationOrNull(): ObserverLocation? =
+        if (locationProvider.hasPermission()) locationProvider.getCurrentLocation() else null
+
+    fun notifyLocationUnavailable() {
+        viewModelScope.launch {
+            _messages.send("현재 위치를 얻지 못했습니다. 위치 권한과 GPS 를 확인해 주세요.")
+        }
     }
 
     fun setTleUrl(url: String) {
@@ -75,6 +150,25 @@ class SettingsViewModel(
 
     fun setMinElevationDeg(deg: Double) {
         viewModelScope.launch { settingsRepository.setMinElevationDeg(deg) }
+    }
+
+    /**
+     * 알림 시간을 바꾼다.
+     * 이미 걸어 둔 알람도 새 시간으로 다시 맞춘다.
+     */
+    fun setNotificationLeadMinutes(minutes: Int) {
+        viewModelScope.launch {
+            settingsRepository.setNotificationLeadMinutes(minutes)
+            passAlarmRepository.applyLeadMinutes(minutes)
+            _messages.send("알림 시간을 ${minutes}분 전으로 바꿨습니다.")
+        }
+    }
+
+    fun clearAlarms() {
+        viewModelScope.launch {
+            passAlarmRepository.removeAll()
+            _messages.send("걸어 둔 알림을 모두 해제했습니다.")
+        }
     }
 
     fun resetTleUrls() {
@@ -119,6 +213,9 @@ class SettingsViewModel(
                 SettingsViewModel(
                     settingsRepository = container.settingsRepository,
                     tleRepository = container.tleRepository,
+                    observerSiteRepository = container.observerSiteRepository,
+                    passAlarmRepository = container.passAlarmRepository,
+                    locationProvider = container.locationProvider,
                 )
             }
         }

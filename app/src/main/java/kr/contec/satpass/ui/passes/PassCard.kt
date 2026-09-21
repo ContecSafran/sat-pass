@@ -20,8 +20,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,6 +73,8 @@ fun PassCard(
     pass: SatellitePass,
     now: Instant,
     onClick: () -> Unit,
+    alarmEnabled: Boolean = false,
+    pickerMode: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val progress = pass.progress(now)
@@ -127,7 +134,13 @@ fun PassCard(
                     .padding(start = 18.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                PassCardHeader(pass = pass, accent = accent, inProgress = inProgress)
+                PassCardHeader(
+                    pass = pass,
+                    accent = accent,
+                    inProgress = inProgress,
+                    alarmEnabled = alarmEnabled,
+                    pickerMode = pickerMode,
+                )
 
                 if (progress != null) {
                     PassProgressBar(
@@ -148,11 +161,36 @@ private fun PassCardHeader(
     pass: SatellitePass,
     accent: Color,
     inProgress: Boolean,
+    alarmEnabled: Boolean,
+    pickerMode: Boolean,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 알림 선택 모드에서는 어떤 패스가 골라졌는지 체크로 보여 준다.
+        if (pickerMode) {
+            Icon(
+                imageVector = if (alarmEnabled) {
+                    Icons.Filled.CheckCircle
+                } else {
+                    Icons.Outlined.RadioButtonUnchecked
+                },
+                contentDescription = null,
+                tint = if (alarmEnabled) PassActive else MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+        } else if (alarmEnabled) {
+            Icon(
+                imageVector = Icons.Filled.Notifications,
+                contentDescription = "알림 켜짐",
+                tint = PassImminent,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+        }
+
         if (inProgress) {
             LiveDot(color = accent)
             Spacer(Modifier.width(8.dp))

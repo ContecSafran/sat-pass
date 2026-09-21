@@ -10,6 +10,7 @@ import kr.contec.satpass.data.local.entity.TleEntity
 import kr.contec.satpass.data.remote.TleApi
 import kr.contec.satpass.data.remote.TleTextParser
 import kr.contec.satpass.data.settings.SettingsRepository
+import kr.contec.satpass.domain.TleValidator
 import java.time.Duration
 import java.time.Instant
 
@@ -42,9 +43,57 @@ class TleRepository(
         if (noradIds.isEmpty()) emptyList() else tleDao.getByNoradIds(noradIds)
     }
 
+    suspend fun getByNoradId(noradId: Int): TleEntity? = withContext(ioDispatcher) {
+        tleDao.getByNoradId(noradId)
+    }
+
     suspend fun search(query: String): List<TleEntity> = withContext(ioDispatcher) {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) emptyList() else tleDao.search(trimmed)
+    }
+
+    /**
+     * 사용자가 직접 입력한 TLE 를 저장한다.
+     *
+     * 체크섬을 포함한 형식 검사를 통과해야만 저장하며, 저장된 값은 `is_manual` 로 표시되어
+     * CelesTrak 카탈로그를 새로 받아도 덮어쓰이지 않는다.
+     *
+     * @param input 붙여 넣은 TLE 텍스트 (2줄 또는 3줄)
+     * @param fallbackName 이름 줄이 없을 때 쓸 이름
+     * @return 검사 결과. [TleValidator.Result.Valid] 면 저장까지 완료된 상태다.
+     */
+    suspend fun saveManualTle(
+        input: String,
+        fallbackName: String = "",
+        now: Instant = Instant.now(),
+    ): TleValidator.Result = withContext(ioDispatcher) {
+        when (val result = TleValidator.validate(input, fallbackName)) {
+            is TleValidator.Result.Invalid -> result
+
+            is TleValidator.Result.Valid -> {
+                tleDao.insert(
+                    TleEntity(
+                        noradId = result.noradId,
+                        satelliteName = result.satelliteName,
+                        line1 = result.line1,
+                        line2 = result.line2,
+                        epochMillis = result.epochMillis,
+                        fetchedAt = now.toEpochMilli(),
+                        isManual = true,
+                    )
+                )
+                Log.i(TAG, "수동 TLE 저장: ${result.satelliteName} (NORAD ${result.noradId})")
+                result
+            }
+        }
+    }
+
+    /**
+     * 수동 입력 TLE 를 지운다.
+     * 이후 CelesTrak 을 갱신하면 카탈로그 값이 다시 채워진다.
+     */
+    suspend fun deleteManualTle(noradId: Int) = withContext(ioDispatcher) {
+        tleDao.deleteManual(noradId)
     }
 
     /**
@@ -96,7 +145,7 @@ class TleRepository(
                     val parsed = TleTextParser.parse(body, now.toEpochMilli())
                     if (parsed.isEmpty()) throw IllegalStateException("유효한 TLE 가 없습니다.")
 
-                    tleDao.replaceAll(parsed)
+                    tleDao.replaceAutomatic(parsed)
                     Log.i(TAG, "TLE 갱신 완료: ${parsed.size}건 (from $url)")
 
                     return@withContext TleSyncResult.Updated(

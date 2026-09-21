@@ -55,19 +55,35 @@ interface TleDao {
     suspend fun getLastFetchedAt(): Long?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(tles: List<TleEntity>)
+    suspend fun insert(tle: TleEntity)
+
+    /**
+     * 이미 있는 행은 건드리지 않는다.
+     * 카탈로그를 새로 받을 때 사용자가 직접 넣은 TLE 를 덮어쓰지 않으려고 쓴다.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIgnoringExisting(tles: List<TleEntity>)
 
     @Query("DELETE FROM tle")
     suspend fun deleteAll()
 
+    /** CelesTrak 에서 받아온 것만 지운다. 수동 입력분은 남긴다. */
+    @Query("DELETE FROM tle WHERE is_manual = 0")
+    suspend fun deleteAutomatic()
+
+    @Query("DELETE FROM tle WHERE norad_id = :noradId AND is_manual = 1")
+    suspend fun deleteManual(noradId: Int)
+
     /**
-     * 카탈로그 전체 교체.
-     * LCAM 과 동일하게 기존 레코드를 모두 지우고 새로 받은 것을 넣는다.
+     * 카탈로그 교체.
+     *
+     * LCAM 과 마찬가지로 받아온 목록으로 갈아끼우되, 사용자가 직접 넣은 TLE 는 지우지 않고
+     * 카탈로그 값보다 우선하도록 남겨 둔다.
      */
     @Transaction
-    suspend fun replaceAll(tles: List<TleEntity>) {
-        deleteAll()
+    suspend fun replaceAutomatic(tles: List<TleEntity>) {
+        deleteAutomatic()
         // 파라미터 바인딩 한도(SQLite 999)를 넘지 않도록 나눠서 넣는다.
-        tles.chunked(200).forEach { insertAll(it) }
+        tles.chunked(200).forEach { insertIgnoringExisting(it) }
     }
 }

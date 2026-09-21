@@ -1,5 +1,6 @@
 package kr.contec.satpass.ui.satellites
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,6 +31,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -57,9 +63,12 @@ fun SatelliteScreen(
     onRemove: (SatelliteEntity) -> Unit,
     onSelectedChange: (SatelliteEntity, Boolean) -> Unit,
     onSetAllSelected: (Boolean) -> Unit,
+    onShowTle: (SatelliteEntity) -> Unit,
+    onSaveManualTle: (input: String, fallbackName: String) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    var showManualTleDialog by remember { mutableStateOf(false) }
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -94,11 +103,27 @@ fun SatelliteScreen(
             )
         }
 
+        item(key = "manual-tle") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = { showManualTleDialog = true }) {
+                    Icon(
+                        Icons.Outlined.EditNote,
+                        contentDescription = null,
+                        modifier = Modifier.width(18.dp),
+                    )
+                    Text("TLE 직접 입력", modifier = Modifier.padding(start = 6.dp))
+                }
+            }
+        }
+
         if (state.tleCachedCount == 0) {
             item(key = "no-cache") {
                 InfoStrip(
                     "TLE 캐시가 비어 있어 검색할 수 없습니다.\n" +
-                        "스케줄 탭에서 목록을 아래로 당겨 TLE 를 먼저 받아 주세요."
+                        "스케줄 탭에서 목록을 아래로 당겨 TLE 를 받거나, TLE 를 직접 입력하세요."
                 )
             }
         }
@@ -182,11 +207,19 @@ fun SatelliteScreen(
             ) { satellite ->
                 RegisteredSatelliteRow(
                     satellite = satellite,
+                    onNameClick = { onShowTle(satellite) },
                     onSelectedChange = { onSelectedChange(satellite, it) },
                     onRemove = { onRemove(satellite) },
                 )
             }
         }
+    }
+
+    if (showManualTleDialog) {
+        ManualTleDialog(
+            onSave = onSaveManualTle,
+            onDismiss = { showManualTleDialog = false },
+        )
     }
 }
 
@@ -275,6 +308,7 @@ private fun SearchResultRow(
 @Composable
 private fun RegisteredSatelliteRow(
     satellite: SatelliteEntity,
+    onNameClick: () -> Unit,
     onSelectedChange: (Boolean) -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -288,10 +322,20 @@ private fun RegisteredSatelliteRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                .padding(end = 6.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            // 이름 영역을 누르면 TLE 상세가 열린다. 스위치/삭제와 터치 영역이 겹치지 않도록
+            // clickable 은 이 Column 에만 건다.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(
+                        onClick = onNameClick,
+                        onClickLabel = "${satellite.name} TLE 보기",
+                    )
+                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
+            ) {
                 Text(
                     text = satellite.name,
                     style = MaterialTheme.typography.bodyLarge,
@@ -304,12 +348,20 @@ private fun RegisteredSatelliteRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = "NORAD ${satellite.noradId}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "NORAD ${satellite.noradId}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "· TLE 보기",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
             Switch(
                 checked = satellite.selected,

@@ -18,6 +18,9 @@ import androidx.room.PrimaryKey
  * @property line2 TLE 2번 줄
  * @property epochMillis TLE epoch (궤도 요소의 기준 시각)
  * @property fetchedAt 이 레코드를 받아온 시각 (epoch millis). 최소 갱신 간격 판단에 쓴다.
+ * @property isManual 사용자가 직접 입력한 TLE 인지.
+ *   true 면 CelesTrak 에서 카탈로그를 새로 받아도 덮어쓰지 않고 유지한다.
+ *   (LEOP 처럼 아직 카탈로그에 없거나 값이 다른 TLE 를 쓸 때 필요하다.)
  */
 @Entity(
     tableName = "tle",
@@ -42,6 +45,9 @@ data class TleEntity(
 
     @ColumnInfo(name = "fetched_at")
     val fetchedAt: Long,
+
+    @ColumnInfo(name = "is_manual", defaultValue = "0")
+    val isManual: Boolean = false,
 ) {
     /** predict4java `TLE` 생성자에 넘길 3줄 배열 */
     fun toTleLines(): Array<String> = arrayOf(satelliteName, line1, line2)

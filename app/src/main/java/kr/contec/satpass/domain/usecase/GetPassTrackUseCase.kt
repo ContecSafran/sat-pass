@@ -45,9 +45,16 @@ class GetPassTrackUseCase(
         val elevationDeg: Double,
     )
 
+    /**
+     * @param stepSeconds 표본 간격(초)
+     * @param limitSamples true 면 그래프용으로 표본 수를 [MAX_SAMPLES] 이하로 줄인다.
+     *   표(초 단위 목록)를 만들 때는 false 로 두어 [stepSeconds] 를 그대로 지킨다.
+     */
     suspend operator fun invoke(
         pass: SatellitePass,
         observer: ObserverLocation,
+        stepSeconds: Int = 1,
+        limitSamples: Boolean = true,
     ): List<TrackPoint> = withContext(computeDispatcher) {
         val tle = tleRepository.getByNoradIds(listOf(pass.noradId)).firstOrNull()
             ?: return@withContext emptyList()
@@ -65,9 +72,13 @@ class GetPassTrackUseCase(
             val totalSeconds = Duration.between(pass.aosTime, pass.losTime).seconds
             if (totalSeconds <= 0) return@withContext emptyList()
 
-            val stepSeconds = maxOf(1L, totalSeconds / MAX_SAMPLES)
+            val step = if (limitSamples) {
+                maxOf(stepSeconds.toLong(), totalSeconds / MAX_SAMPLES)
+            } else {
+                maxOf(1L, stepSeconds.toLong())
+            }
 
-            generateSequence(0L) { it + stepSeconds }
+            generateSequence(0L) { it + step }
                 .takeWhile { it <= totalSeconds }
                 .map { offset ->
                     val time = pass.aosTime.plusSeconds(offset)

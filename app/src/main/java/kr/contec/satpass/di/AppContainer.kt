@@ -4,11 +4,14 @@ import android.content.Context
 import kr.contec.satpass.data.local.SatPassDatabase
 import kr.contec.satpass.data.location.LocationProvider
 import kr.contec.satpass.data.remote.NetworkModule
+import kr.contec.satpass.data.repository.ObserverSiteRepository
+import kr.contec.satpass.data.repository.PassAlarmRepository
 import kr.contec.satpass.data.repository.SatelliteRepository
 import kr.contec.satpass.data.repository.TleRepository
 import kr.contec.satpass.data.settings.SettingsRepository
 import kr.contec.satpass.domain.usecase.GetPassTrackUseCase
 import kr.contec.satpass.domain.usecase.PredictPassesUseCase
+import kr.contec.satpass.notification.PassAlarmScheduler
 
 /**
  * 앱 전역 의존성 컨테이너.
@@ -32,6 +35,10 @@ class AppContainer(context: Context) {
         SatelliteRepository(database.satelliteDao())
     }
 
+    val observerSiteRepository: ObserverSiteRepository by lazy {
+        ObserverSiteRepository(database.observerSiteDao())
+    }
+
     val tleRepository: TleRepository by lazy {
         TleRepository(
             tleDao = database.tleDao(),
@@ -41,6 +48,14 @@ class AppContainer(context: Context) {
     }
 
     val locationProvider: LocationProvider by lazy { LocationProvider(appContext) }
+
+    val passAlarmRepository: PassAlarmRepository by lazy {
+        PassAlarmRepository(
+            passAlarmDao = database.passAlarmDao(),
+            scheduler = PassAlarmScheduler(appContext),
+            settingsRepository = settingsRepository,
+        )
+    }
 
     val predictPassesUseCase: PredictPassesUseCase by lazy {
         PredictPassesUseCase(tleRepository)

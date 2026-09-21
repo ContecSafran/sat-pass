@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +26,8 @@ class SettingsRepository(private val context: Context) {
         val MIN_SYNC_INTERVAL_HOURS = intPreferencesKey("min_sync_interval_hours")
         val PREDICTION_DAYS = intPreferencesKey("prediction_days")
         val MIN_ELEVATION_DEG = doublePreferencesKey("min_elevation_deg")
+        val ACTIVE_SITE_ID = longPreferencesKey("active_site_id")
+        val NOTIFICATION_LEAD_MINUTES = intPreferencesKey("notification_lead_minutes")
     }
 
     val settings: Flow<SatPassSettings> = context.dataStore.data.map { prefs ->
@@ -40,6 +43,10 @@ class SettingsRepository(private val context: Context) {
                 ?: SatPassSettings.DEFAULT_PREDICTION_DAYS,
             minElevationDeg = prefs[Keys.MIN_ELEVATION_DEG]
                 ?: SatPassSettings.DEFAULT_MIN_ELEVATION_DEG,
+            activeSiteId = prefs[Keys.ACTIVE_SITE_ID]
+                ?: SatPassSettings.DEFAULT_ACTIVE_SITE_ID,
+            notificationLeadMinutes = prefs[Keys.NOTIFICATION_LEAD_MINUTES]
+                ?: SatPassSettings.DEFAULT_NOTIFICATION_LEAD_MINUTES,
         )
     }
 
@@ -63,5 +70,19 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setMinElevationDeg(deg: Double) {
         context.dataStore.edit { it[Keys.MIN_ELEVATION_DEG] = deg.coerceIn(0.0, 89.0) }
+    }
+
+    /**
+     * 패스 계산에 쓸 관측 지점을 바꾼다.
+     *
+     * @param siteId 저장된 지점의 id. `ObserverSiteEntity.CURRENT_LOCATION_ID`(0) 이면 GPS 현재 위치.
+     */
+    suspend fun setActiveSiteId(siteId: Long) {
+        context.dataStore.edit { it[Keys.ACTIVE_SITE_ID] = siteId }
+    }
+
+    /** 패스 시작 몇 분 전에 알릴지 */
+    suspend fun setNotificationLeadMinutes(minutes: Int) {
+        context.dataStore.edit { it[Keys.NOTIFICATION_LEAD_MINUTES] = minutes.coerceIn(1, 120) }
     }
 }
