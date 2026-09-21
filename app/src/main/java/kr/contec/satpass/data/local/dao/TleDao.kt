@@ -46,7 +46,6 @@ interface TleDao {
 
     /**
      * 가장 최근 수신 시각. 최소 갱신 간격(설정값) 판단에 쓴다.
-     * LCAM `OrbitService.renew()` 의 `reloadTime` 검사와 같은 역할.
      */
     @Query("SELECT MAX(fetched_at) FROM tle")
     fun observeLastFetchedAt(): Flow<Long?>
@@ -77,7 +76,7 @@ interface TleDao {
     /**
      * 카탈로그 교체.
      *
-     * LCAM 과 마찬가지로 받아온 목록으로 갈아끼우되, 사용자가 직접 넣은 TLE 는 지우지 않고
+     * 받아온 목록으로 갈아끼우되, 사용자가 직접 넣은 TLE 는 지우지 않고
      * 카탈로그 값보다 우선하도록 남겨 둔다.
      */
     @Transaction

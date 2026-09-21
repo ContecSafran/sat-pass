@@ -6,7 +6,7 @@ import org.junit.Test
 
 class TleValidatorTest {
 
-    // LCAM docs 의 CONTECSAT-1 예시 TLE
+    // CONTECSAT-1 예시 TLE
     private val name = "CONTECSAT-1"
     private val line1 = "1 59117U 24043V   25016.91041735  .00012931  00000+0  53778-3 0  9998"
     private val line2 = "2 59117  97.5006 145.4981 0012470 262.8453  97.1366 15.23844556 48285"

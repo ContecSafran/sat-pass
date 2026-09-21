@@ -16,11 +16,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.contec.satpass.domain.usecase.GetPassTrackUseCase
 import kotlin.math.cos
+import kotlin.math.sqrt
 import kotlin.math.min
 import kotlin.math.sin
 
@@ -53,7 +55,7 @@ fun SkyPlot(
             drawCompassLabels(center, radius, labelColor, textMeasurer)
 
             if (track.size >= 2) {
-                drawTrack(track, center, radius, accent)
+                drawTrack(track, center, radius, accent, textMeasurer)
             }
         }
     }
@@ -115,6 +117,7 @@ private fun DrawScope.drawTrack(
     center: Offset,
     radius: Float,
     accent: Color,
+    textMeasurer: TextMeasurer,
 ) {
     val points = track.map { polarToOffset(center, radius, it.azimuthDeg, it.elevationDeg) }
 
@@ -128,9 +131,48 @@ private fun DrawScope.drawTrack(
     drawCircle(color = accent, radius = 5f, center = points.first(), style = Stroke(width = 2.5f))
     drawCircle(color = accent, radius = 5f, center = points.last())
 
+    // AOS/LOS 는 지평선 근처라 바깥쪽에 글자를 두면 잘린다. 안쪽으로 밀어서 그린다.
+    drawPointLabel(textMeasurer, "AOS", points.first(), center, accent)
+    drawPointLabel(textMeasurer, "LOS", points.last(), center, accent)
+
     val maxIndex = track.indices.maxByOrNull { track[it].elevationDeg } ?: return
     drawCircle(color = accent.copy(alpha = 0.35f), radius = 9f, center = points[maxIndex])
     drawCircle(color = accent, radius = 4f, center = points[maxIndex])
+}
+
+/**
+ * 궤적 위의 한 점에 이름표를 붙인다.
+ *
+ * [point] 에서 [center] 쪽으로 조금 밀어 마커와 겹치지 않게 하고,
+ * 캔버스를 벗어나지 않도록 위치를 가둔다.
+ */
+private fun DrawScope.drawPointLabel(
+    textMeasurer: TextMeasurer,
+    text: String,
+    point: Offset,
+    center: Offset,
+    color: Color,
+) {
+    val measured = textMeasurer.measure(
+        text,
+        TextStyle(color = color, fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
+    )
+
+    // 점에서 중심 방향으로 단위 벡터를 구해 그만큼 안쪽으로 옮긴다.
+    val dx = center.x - point.x
+    val dy = center.y - point.y
+    val distance = sqrt(dx * dx + dy * dy).takeIf { it > 0.001f } ?: 1f
+    val offsetDistance = 16.dp.toPx()
+
+    val labelCenterX = point.x + dx / distance * offsetDistance
+    val labelCenterY = point.y + dy / distance * offsetDistance
+
+    val left = (labelCenterX - measured.size.width / 2f)
+        .coerceIn(0f, (size.width - measured.size.width).coerceAtLeast(0f))
+    val top = (labelCenterY - measured.size.height / 2f)
+        .coerceIn(0f, (size.height - measured.size.height).coerceAtLeast(0f))
+
+    drawText(textLayoutResult = measured, topLeft = Offset(left, top))
 }
 
 /**

@@ -6,8 +6,6 @@ import java.time.Instant
 /**
  * 계산된 위성 통과(pass) 1건.
  *
- * LCAM 의 `PassDto.Predicted` 와 같은 항목을 담는다.
- *
  * @property noradId NORAD 카탈로그 번호
  * @property satelliteName 위성 이름
  * @property aosTime AOS(Acquisition of Signal) 시각

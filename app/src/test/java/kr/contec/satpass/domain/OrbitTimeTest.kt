@@ -9,7 +9,7 @@ class OrbitTimeTest {
     /**
      * TLE epoch `25016.91041735` (2025년 16일째 0.91041735일) 가
      * 2025-01-16T21:51:00Z 부근으로 변환되어야 한다.
-     * (LCAM docs 의 CONTECSAT-1 예시 TLE 값)
+     * (CONTECSAT-1 예시 TLE 값)
      */
     @Test
     fun `TLE epoch를 UTC 시각으로 변환한다`() {

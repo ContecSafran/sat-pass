@@ -1,6 +1,9 @@
 package kr.contec.satpass.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,13 +14,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -84,6 +90,7 @@ fun SettingsScreen(
     // null 이 아니면 편집 다이얼로그를 띄운다. NEW_SITE 는 "새로 추가" 를 뜻한다.
     var editorTarget by remember { mutableStateOf<SiteEditorTarget?>(null) }
     var siteToDelete by remember { mutableStateOf<ObserverSiteEntity?>(null) }
+    var showExactAlarmInfo by remember { mutableStateOf(false) }
     // 저장은 편집이 끝났을 때(포커스 이동/완료)만 하도록 로컬 상태로 들고 있는다.
     var tleUrl by remember(state.settings.tleSourceUrl) {
         mutableStateOf(state.settings.tleSourceUrl)
@@ -228,6 +235,7 @@ fun SettingsScreen(
                 title = "패스 알림",
                 description = "알림을 켠 패스가 시작되기 몇 분 전에 알릴지 정합니다. " +
                     "알림은 스케줄 화면에서 패스를 오른쪽으로 밀거나, 상단 알림 버튼으로 켤 수 있습니다.",
+                onInfoClick = { showExactAlarmInfo = true },
             ) {
                 ChipRow(
                     options = SatPassSettings.NOTIFICATION_LEAD_OPTIONS,
@@ -312,8 +320,7 @@ fun SettingsScreen(
         item(key = "about") {
             SettingsCard(
                 title = "궤도 계산",
-                description = "SGP4 기반 predict4java 를 사용합니다. AOS/LOS·최대 고각·방위각 계산 " +
-                    "방식은 LCAM 서버와 동일합니다.",
+                description = "SGP4 기반 predict4java 로 AOS/LOS·최대 고각·방위각을 계산합니다.",
             ) {}
         }
     }
@@ -340,6 +347,17 @@ fun SettingsScreen(
         )
     }
 
+    if (showExactAlarmInfo) {
+        ExactAlarmInfoDialog(
+            canScheduleExactAlarms = state.canScheduleExactAlarms,
+            onOpenSettings = {
+                onOpenExactAlarmSettings()
+                showExactAlarmInfo = false
+            },
+            onDismiss = { showExactAlarmInfo = false },
+        )
+    }
+
     siteToDelete?.let { site ->
         AlertDialog(
             onDismissRequest = { siteToDelete = null },
@@ -361,6 +379,99 @@ fun SettingsScreen(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         )
     }
+}
+
+/**
+ * 정확 알람 권한이 무엇인지 설명하는 다이얼로그.
+ *
+ * 이 권한은 런타임 권한 팝업으로 받을 수 없고 시스템 설정에서 직접 켜야 해서,
+ * 왜 필요한지와 켜는 방법을 함께 안내한다.
+ */
+@Composable
+private fun ExactAlarmInfoDialog(
+    canScheduleExactAlarms: Boolean,
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Outlined.ErrorOutline,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        title = { Text("정확 알람 권한이란?") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                InfoParagraph(
+                    "안드로이드는 배터리를 아끼려고 여러 앱의 알람을 모아서 한꺼번에 처리합니다. " +
+                        "이 경우 알림이 요청한 시각보다 몇 분에서 수십 분까지 늦게 올 수 있습니다."
+                )
+                InfoParagraph(
+                    "'정확 알람' 권한을 켜면 요청한 시각에 정확히 알립니다. " +
+                        "안드로이드 12부터는 배터리 소모가 커서 사용자가 직접 허용해야 합니다."
+                )
+                InfoParagraph(
+                    "패스는 보통 5~15분 만에 지나갑니다. '10분 전 알림'이 15분 늦게 오면 " +
+                        "패스가 이미 끝난 뒤라 알림이 의미가 없어집니다."
+                )
+
+                InfoSectionTitle(
+                    if (canScheduleExactAlarms) "현재 상태: 허용됨" else "현재 상태: 꺼짐"
+                )
+                InfoParagraph(
+                    if (canScheduleExactAlarms) {
+                        "정확한 시각에 알림이 옵니다."
+                    } else {
+                        "알림은 오지만 몇 분 늦을 수 있습니다. 아래 버튼으로 설정을 열어 켤 수 있습니다."
+                    }
+                )
+
+                InfoSectionTitle("알림이 계속 늦는다면")
+                InfoParagraph(
+                    "삼성·샤오미 등은 자체 절전 기능이 따로 있습니다. " +
+                        "설정 > 배터리 > 백그라운드 사용 제한에서 이 앱을 '제한 없음'으로 두면 확실합니다."
+                )
+            }
+        },
+        confirmButton = {
+            if (canScheduleExactAlarms) {
+                TextButton(onClick = onDismiss) { Text("확인") }
+            } else {
+                TextButton(onClick = onOpenSettings) { Text("설정 열기") }
+            }
+        },
+        dismissButton = {
+            if (!canScheduleExactAlarms) {
+                TextButton(onClick = onDismiss) { Text("닫기") }
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+    )
+}
+
+@Composable
+private fun InfoSectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
+private fun InfoParagraph(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 /** 편집 다이얼로그의 대상 */
@@ -431,6 +542,8 @@ private fun SiteOptionRow(
 private fun SettingsCard(
     title: String,
     description: String,
+    /** 지정하면 제목 왼쪽에 설명 아이콘이 붙고, 누르면 이 함수가 호출된다. */
+    onInfoClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     Surface(
@@ -442,11 +555,25 @@ private fun SettingsCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onInfoClick != null) {
+                    Icon(
+                        imageVector = Icons.Outlined.ErrorOutline,
+                        contentDescription = "$title 설명 보기",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .clickable(onClick = onInfoClick),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,

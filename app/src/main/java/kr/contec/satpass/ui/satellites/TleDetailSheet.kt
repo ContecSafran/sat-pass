@@ -265,7 +265,6 @@ private fun LoadedBlock(
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         InfoRow("TLE epoch", PassFormat.utcDateTime(Instant.ofEpochMilli(tle.epochMillis)))
         InfoRow("받아온 시각", PassFormat.dateTime(Instant.ofEpochMilli(tle.fetchedAt)))
-        InfoRow("카탈로그 이름", tle.satelliteName)
     }
 }
 

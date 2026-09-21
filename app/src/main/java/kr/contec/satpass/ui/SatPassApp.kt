@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.AppSettingsAlt
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SatelliteAlt
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kr.contec.satpass.domain.model.SatellitePass
@@ -134,6 +136,12 @@ fun SatPassApp() {
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { passViewModel.refreshLocation() }
 
+    // 정확 알람 권한은 시스템 설정에서 켜기 때문에, 앱으로 돌아올 때마다 상태를 다시 읽는다.
+    LifecycleResumeEffect(settingsViewModel) {
+        settingsViewModel.refreshExactAlarmState()
+        onPauseOrDispose { }
+    }
+
     // 각 화면의 일회성 메시지를 스낵바로
     LaunchedEffect(passViewModel) {
         passViewModel.messages.collect { snackbarHostState.showSnackbar(it) }
@@ -215,6 +223,24 @@ fun SatPassApp() {
                             },
                         )
                     }
+
+                    // 설정 화면에서는 시스템의 앱 정보 화면으로 바로 갈 수 있게 한다.
+                    if (currentTab == SatPassTab.Settings) {
+                        IconButton(
+                            onClick = {
+                                if (!openAppDetailsSettings(context)) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("앱 정보 화면을 열 수 없습니다.")
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.AppSettingsAlt,
+                                contentDescription = "휴대폰 설정에서 앱 정보 열기",
+                            )
+                        }
+                    }
                 },
             )
         },
@@ -295,7 +321,11 @@ fun SatPassApp() {
                 onLocationUnavailable = settingsViewModel::notifyLocationUnavailable,
                 onNotificationLeadChange = settingsViewModel::setNotificationLeadMinutes,
                 onClearAlarms = settingsViewModel::clearAlarms,
-                onOpenExactAlarmSettings = { openExactAlarmSettings(context) },
+                onOpenExactAlarmSettings = {
+                    // 버튼을 다시 누르면 그 사이 바뀐 권한 상태를 먼저 반영한다.
+                    settingsViewModel.refreshExactAlarmState()
+                    openExactAlarmSettings(context)
+                },
                 contentPadding = innerPadding,
             )
         }

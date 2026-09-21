@@ -17,7 +17,7 @@ import java.time.Instant
 /**
  * TLE 캐시 관리.
  *
- * 갱신 정책은 LCAM `OrbitService.renew()` 와 같다.
+ * 갱신 정책은 다음과 같다.
  *  - 마지막 갱신 후 최소 간격(설정값, 기본 6시간)이 지나지 않으면 요청하지 않는다.
  *  - 받아온 카탈로그로 테이블 전체를 교체한다.
  *  - 요청이 실패하면 테이블을 건드리지 않고 기존 캐시를 계속 쓴다.
@@ -107,7 +107,7 @@ class TleRepository(
             val settings = settingsRepository.current()
             val lastFetchedAt = tleDao.getLastFetchedAt()
 
-            // 최소 갱신 간격 검사 — LCAM 의 reloadTime + 6시간 검사와 동일한 역할
+            // 최소 갱신 간격 검사
             if (!force && lastFetchedAt != null) {
                 val last = Instant.ofEpochMilli(lastFetchedAt)
                 val nextAvailableAt = last.plus(Duration.ofHours(settings.minSyncIntervalHours.toLong()))

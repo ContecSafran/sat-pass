@@ -8,7 +8,6 @@ import kr.contec.satpass.orbit.TLE
 /**
  * 3줄(TLE) 형식 텍스트를 [TleEntity] 목록으로 바꾼다.
  *
- * LCAM `CelesTrakHandler.requestOrbitList()` 와 같은 방식으로,
  * 3줄씩 묶어 predict4java `TLE` 로 파싱해 보고 실패한 위성만 건너뛴다.
  * (형식이 깨진 한 건 때문에 전체 갱신이 실패하지 않게 하는 것이 목적)
  */

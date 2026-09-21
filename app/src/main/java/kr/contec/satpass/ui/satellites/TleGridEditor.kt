@@ -43,6 +43,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.contec.satpass.domain.TleValidator
@@ -55,15 +56,37 @@ const val TLE_LINE_LENGTH = 69
 private const val CHECKSUM_INDEX = 68
 
 /**
- * 항상 공백인 자리 (LCAM 웹 입력 화면과 같은 위치).
+ * TLE 형식상 항상 공백인 자리.
  * 입력을 받지 않고 미리 공백으로 채워 둔다.
  */
 private val LINE1_FIXED_SPACES = setOf(1, 8, 17, 32, 43, 52, 61, 63)
 private val LINE2_FIXED_SPACES = setOf(1, 7, 16, 25, 33, 42, 51)
 
-/** 셀 하나의 너비. 69칸이 화면을 넘으므로 가로 스크롤로 본다. */
-private val CELL_WIDTH = 20.dp
-private val CELL_HEIGHT = 32.dp
+/**
+ * 셀 하나의 기본 크기. 69칸이 화면을 넘으므로 가로 스크롤로 본다.
+ *
+ * 기기 글자 크기를 키운 사용자에게는 글자가 잘리지 않도록 칸도 같이 키운다.
+ * (칸이 커져도 가로 스크롤이라 화면 폭에는 영향이 없다)
+ */
+private val BASE_CELL_WIDTH = 20.dp
+private val BASE_CELL_HEIGHT = 32.dp
+
+/** 칸이 지나치게 커지지 않도록 배율에 상한을 둔다. */
+private const val MAX_CELL_SCALE = 1.6f
+
+/** 글자 크기 설정을 반영한 칸 크기 */
+private data class CellSize(val width: Dp, val height: Dp)
+
+@Composable
+private fun rememberCellSize(): CellSize {
+    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, MAX_CELL_SCALE)
+    return remember(fontScale) {
+        CellSize(
+            width = BASE_CELL_WIDTH * fontScale,
+            height = BASE_CELL_HEIGHT * fontScale,
+        )
+    }
+}
 
 /**
  * TLE 한 줄의 입력 상태.
@@ -160,8 +183,9 @@ fun TleLineEditor(
     val focusRequesters = remember(state) { List(TLE_LINE_LENGTH) { FocusRequester() } }
     var focusedIndex by remember(state) { mutableIntStateOf(-1) }
 
+    val cellSize = rememberCellSize()
     val density = LocalDensity.current
-    val cellWidthPx = with(density) { CELL_WIDTH.toPx() }
+    val cellWidthPx = with(density) { cellSize.width.toPx() }
 
     // 포커스가 화면 밖으로 나가지 않도록 따라 스크롤한다.
     LaunchedEffect(focusedIndex) {
@@ -193,7 +217,7 @@ fun TleLineEditor(
                 repeat(TLE_LINE_LENGTH) { index ->
                     val column = index + 1
                     Box(
-                        modifier = Modifier.width(CELL_WIDTH),
+                        modifier = Modifier.width(cellSize.width),
                         contentAlignment = Alignment.Center,
                     ) {
                         if (column == 1 || column % 5 == 0) {
@@ -212,6 +236,7 @@ fun TleLineEditor(
             Row {
                 repeat(TLE_LINE_LENGTH) { index ->
                     TleCell(
+                        cellSize = cellSize,
                         state = state,
                         index = index,
                         focusRequester = focusRequesters[index],
@@ -241,6 +266,7 @@ fun TleLineEditor(
 /** 칸 하나 */
 @Composable
 private fun TleCell(
+    cellSize: CellSize,
     state: TleLineState,
     index: Int,
     focusRequester: FocusRequester,
@@ -263,7 +289,7 @@ private fun TleCell(
 
     Box(
         modifier = Modifier
-            .size(width = CELL_WIDTH, height = CELL_HEIGHT)
+            .size(width = cellSize.width, height = cellSize.height)
             .padding(horizontal = 1.dp, vertical = 2.dp)
             .clip(RoundedCornerShape(4.dp))
             .background(background)

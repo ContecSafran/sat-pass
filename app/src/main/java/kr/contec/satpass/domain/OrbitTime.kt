@@ -10,7 +10,7 @@ import java.util.Date
  * 궤도 계산에서 쓰는 시간 변환 모음.
  *
  * predict4java 가 [Date] 기반이라 [Instant] 와 오가는 변환이 필요하고,
- * TLE epoch 해석은 LCAM `TimeUtils.tleEpochToLocalDateTime` 과 같은 방식을 쓴다.
+ * TLE epoch 는 2자리 연도와 연중 일수(소수 포함)를 합친 형식이라 따로 풀어 줘야 한다.
  * (predict4java 는 UTC 기준으로 계산하므로 모든 변환도 UTC 로 맞춘다.)
  */
 object OrbitTime {

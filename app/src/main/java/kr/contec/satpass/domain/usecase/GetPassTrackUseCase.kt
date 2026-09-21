@@ -18,9 +18,7 @@ import java.time.Instant
  * 한 패스 구간의 위성 궤적(방위각/고각)을 계산한다.
  * 상세 화면의 스카이 플롯에 쓴다.
  *
- * LCAM `Predict4JavaHandler.getTrackPositions()` 와 같은 방식이다.
- * 다만 LCAM 은 1초 간격으로 전 구간을 계산하지만, 화면에 그리는 용도라
- * 표본 수를 제한해 간격을 자동으로 넓힌다.
+ * 화면에 그리는 용도일 때는 표본 수를 제한해 간격을 자동으로 넓힌다.
  */
 class GetPassTrackUseCase(
     private val tleRepository: TleRepository,

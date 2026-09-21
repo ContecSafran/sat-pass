@@ -57,3 +57,18 @@ fun openNotificationSettings(context: Context): Boolean {
         false
     }
 }
+
+/** 이 앱의 "애플리케이션 정보" 시스템 설정 화면을 연다. */
+fun openAppDetailsSettings(context: Context): Boolean {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        .setData(Uri.fromParts("package", context.packageName, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    return try {
+        context.startActivity(intent)
+        true
+    } catch (e: ActivityNotFoundException) {
+        Log.d(TAG, "앱 정보 화면을 열 수 없음", e)
+        false
+    }
+}

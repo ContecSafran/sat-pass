@@ -7,7 +7,7 @@ package kr.contec.satpass.data.settings
  * @property fallbackTleSourceUrl 기본 URL 요청이 실패했을 때 대신 시도할 URL.
  *   비워 두면 폴백을 시도하지 않는다.
  * @property minSyncIntervalHours 최소 갱신 간격(시간). 마지막 갱신 후 이 시간이 지나지 않았으면
- *   당겨서 새로고침해도 네트워크 요청을 보내지 않는다. (LCAM 기본값과 같은 6시간)
+ *   당겨서 새로고침해도 네트워크 요청을 보내지 않는다. (기본 6시간)
  * @property predictionDays 앞으로 며칠분의 패스를 계산할지
  * @property minElevationDeg 이 고각보다 낮은 패스는 목록에서 숨긴다
  * @property activeSiteId 패스 계산에 쓸 관측 지점. 0 이면 GPS 현재 위치를 쓴다.
@@ -23,7 +23,7 @@ data class SatPassSettings(
     val notificationLeadMinutes: Int,
 ) {
     companion object {
-        /** CelesTrak 의 활성 위성 전체 TLE (LCAM `CelesTrakClient` 와 같은 엔드포인트) */
+        /** CelesTrak 의 활성 위성 전체 TLE */
         const val DEFAULT_TLE_URL =
             "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
 

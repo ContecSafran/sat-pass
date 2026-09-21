@@ -164,6 +164,29 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * 정확 알람 권한 상태를 다시 읽는다.
+     *
+     * 이 권한은 시스템 설정에서 켜기 때문에 앱이 그 변화를 바로 알 수 없다.
+     * 설정 화면으로 돌아왔을 때와 사용자가 버튼을 다시 눌렀을 때 호출한다.
+     * 권한이 새로 켜졌다면, 부정확 알람으로 등록돼 있던 알람들을 정확 알람으로 다시 건다.
+     */
+    fun refreshExactAlarmState() {
+        viewModelScope.launch {
+            val canSchedule = passAlarmRepository.canScheduleExactAlarms()
+            val wasBlocked = !_uiState.value.canScheduleExactAlarms
+
+            _uiState.update { it.copy(canScheduleExactAlarms = canSchedule) }
+
+            if (canSchedule && wasBlocked) {
+                passAlarmRepository.rescheduleAll()
+                if (_uiState.value.scheduledAlarmCount > 0) {
+                    _messages.send("정확 알람이 허용되어 예약된 알림을 다시 등록했습니다.")
+                }
+            }
+        }
+    }
+
     fun clearAlarms() {
         viewModelScope.launch {
             passAlarmRepository.removeAll()

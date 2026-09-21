@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 /**
  * CelesTrak 에서 받아온 TLE 캐시.
  *
- * LCAM 의 `Orbit` 테이블과 같은 역할로, 받아온 카탈로그 전체를 저장한다.
+ * 받아온 카탈로그 전체를 저장한다.
  * 위성 검색(이름/NORAD ID)과 패스 계산 모두 이 테이블을 본다.
  * 네트워크 실패 시에는 갱신하지 않고 기존 캐시를 그대로 사용한다.
  *

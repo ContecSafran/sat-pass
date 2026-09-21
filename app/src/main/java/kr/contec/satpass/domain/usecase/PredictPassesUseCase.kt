@@ -26,7 +26,7 @@ import java.time.ZoneOffset
 /**
  * 등록·선택된 위성들의 통과 스케줄을 계산한다.
  *
- * 계산 방식은 LCAM `Predict4JavaHandler.predict()` 와 같다.
+ * 계산 방식은 다음과 같다.
  *  - `PassPredictor.getPasses(오늘 00:00 UTC, 24 * 기간, false)` 로 패스 목록을 얻는다.
  *  - 최대 고각 시각은 AOS~LOS 의 중간 시점으로 잡는다.
  *  - 최대 고각은 그 시점 ±1분을 1초 간격으로 훑어 최댓값을 쓴다.
@@ -43,7 +43,7 @@ class PredictPassesUseCase(
 
         /**
          * 위성 1기당 계산 제한 시간.
-         * LCAM 은 서버라서 2초로 두지만, 휴대폰에서는 3일치 계산에 더 걸릴 수 있어 넉넉히 준다.
+         * 기간이 길면 계산이 오래 걸릴 수 있어 넉넉히 준다.
          */
         private const val PER_SATELLITE_TIMEOUT_MS = 15_000L
     }
@@ -125,7 +125,7 @@ class PredictPassesUseCase(
             GroundStationPosition(observer.latitude, observer.longitude, observer.altitudeMeters),
         )
 
-        // LCAM 과 동일하게 "오늘 00:00 UTC" 부터 24 * 기간 시간을 훑는다.
+        // "오늘 00:00 UTC" 부터 24 * 기간 시간을 훑는다.
         val startDate = LocalDate.now(ZoneOffset.UTC)
         val startInstant = startDate.atTime(LocalTime.MIDNIGHT).toInstant(ZoneOffset.UTC)
         val endInstant = startDate.plusDays(days.toLong()).atTime(LocalTime.MIDNIGHT)
@@ -160,7 +160,6 @@ class PredictPassesUseCase(
 
     /**
      * 최대 고각. 지정 시각 ±1분을 1초 간격으로 훑어 최댓값을 쓴다.
-     * (LCAM `getMaxElevation` 과 동일)
      */
     private fun maxElevationAt(predictor: PassPredictor, time: Instant): Double {
         val degrees = Math.toDegrees(
@@ -170,7 +169,7 @@ class PredictPassesUseCase(
         return roundTo2(degrees)
     }
 
-    /** 최대 고각 시점의 방위각. (LCAM `getCenterAzimuth` 과 동일) */
+    /** 최대 고각 시점의 방위각. */
     private fun centerAzimuthAt(predictor: PassPredictor, time: Instant): Double =
         roundTo2(Math.toDegrees(predictor.getSatPos(time.toDate()).azimuth))
 
